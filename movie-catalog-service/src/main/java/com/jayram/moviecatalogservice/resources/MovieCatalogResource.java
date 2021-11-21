@@ -39,7 +39,7 @@ public class MovieCatalogResource {
 				.map(rating -> { 
 					Movie movie = restTemplate.getForObject("http://movie-info-service/movies/"+ rating.getMovieId(), Movie.class); //Unmarshalling of response into Movie class instance
 					
-					return new CatalogItem(movie.getName(), "Desc", rating.getRating());
+					return new CatalogItem(movie.getName(), movie.getDesciption(), rating.getRating());
 				})
 				.collect(Collectors.toList());
 		
