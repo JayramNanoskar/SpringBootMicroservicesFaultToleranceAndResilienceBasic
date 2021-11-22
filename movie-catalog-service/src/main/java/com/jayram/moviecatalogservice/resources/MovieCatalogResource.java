@@ -19,6 +19,8 @@ import com.jayram.moviecatalogservice.models.CatalogItem;
 import com.jayram.moviecatalogservice.models.Movie;
 import com.jayram.moviecatalogservice.models.Rating;
 import com.jayram.moviecatalogservice.models.UserRating;
+import com.jayram.moviecatalogservice.services.MovieInfo;
+import com.jayram.moviecatalogservice.services.UserRatingInfo;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 
 @RestController
@@ -31,23 +33,23 @@ public class MovieCatalogResource {
 	@Autowired
 	private WebClient.Builder webClientBuilder;
 	
+	@Autowired
+	MovieInfo movieInfo;
+	
+	@Autowired
+	UserRatingInfo userRatingInfo;
+	
 	@RequestMapping("/{userId}")
-	@HystrixCommand(fallbackMethod = "getFallbackCatalog")
 	public List<CatalogItem> getCatalog(@PathVariable("userId") String userId){
 		
-		UserRating ratings = restTemplate.getForObject("http://ratings-data-service/ratingsdata/users/"+ userId, UserRating.class);
+		UserRating ratings = userRatingInfo.getUserRating(userId);
 
 		return ratings.getUserRatings().stream()
 				.map(rating -> { 
-					Movie movie = restTemplate.getForObject("http://movie-info-service/movies/"+ rating.getMovieId(), Movie.class); //Unmarshalling of response into Movie class instance
-					
-					return new CatalogItem(movie.getName(), movie.getDesciption(), rating.getRating());
+					return movieInfo.getCatalogItem(rating);
 				})
 				.collect(Collectors.toList());
 		
 	}
 	
-	public List<CatalogItem> getFallbackCatalog(@PathVariable("userId") String userId){
-		return Arrays.asList(new CatalogItem("No movie", "", 0));
-	}
 }
